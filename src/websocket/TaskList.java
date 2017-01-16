@@ -30,7 +30,7 @@ public class TaskList {
 	String SEND_MSG = "7002";	//new messege sent
 	   // JDBC driver name and database URL
 	//static HashMap<WebSocket,String> onlineList = new HashMap<WebSocket,String>();
-	static BiMap<WebSocket, String> onlineList = HashBiMap.create();
+	static BiMap<String, WebSocket> onlineList = HashBiMap.create();
 	
 	TaskList(WebSocket user,SocketData data){
 		this.user = user;
@@ -53,7 +53,7 @@ public class TaskList {
 		      u.setTime(cur);	      
 		      entitymanager.persist( u );
 		      entitymanager.getTransaction( ).commit( );    
-		      onlineList.put(user, info.data);// <websocket,mem_id>
+		      onlineList.put(info.data,user);// <websocket,mem_id>
 		      return this.getResponse(info.header);
 		     
 			
@@ -66,7 +66,7 @@ public class TaskList {
 			System.out.println("new msg received");
 			if(onlineList.containsValue(info.getData())){
 				System.out.println("guy is present");
-				WebSocket temp = onlineList.inverse().get(info.getData());
+				WebSocket temp = onlineList.get(info.getData());
 				temp.send("you have new msg");
 			}else{
 				System.out.println("guy not present");				
@@ -74,35 +74,42 @@ public class TaskList {
 			
 		}
 		else if(info.header.equals(this.SEND_MSG)){
-			
-			Gson gson = new Gson();
-			SendMessage data = new SendMessage();
-	        data = gson.fromJson(info.getData(), SendMessage.class);
-	        System.out.println("sending new msg"+data.getMessage());
-	        int id = Integer.parseInt(onlineList.get(this.user));
-	        Date cur = new Date(Calendar.getInstance().getTime().getTime());
-	        EntityManagerFactory emfactory;
-			EntityManager entitymanager;
-			  emfactory = Persistence.createEntityManagerFactory( "websocket" );
-			  entitymanager = emfactory.createEntityManager( );
-		      entitymanager.getTransaction( ).begin( );
-		      MyMessage m = new MyMessage();
-		      m.setMessage(data.getMessage());
-		      m.setReceiver(data.getReceiver());
-		      m.setSender(id);
-		      m.setDateTime(cur);
-		      entitymanager.persist( m );
-		      entitymanager.getTransaction( ).commit( );
-		      String recev = Integer.toString(data.getReceiver());
-		      System.out.println("rec : "+recev);
-			  String json = gson.toJson(m);
-			  if(onlineList.containsValue(recev)){
-					System.out.println("guy is present");
-					WebSocket temp = onlineList.inverse().get(recev);
-					temp.send(json);
-				}else{
-					System.out.println("guy not present");				
-				}
+				        
+				  Gson gson = new Gson(); 
+				  SendMessage data = new SendMessage(); 
+		          data = gson.fromJson(info.getData(), SendMessage.class); 
+		          System.out.println("sending new msg"+data.getMessage()); 
+		          int id = Integer.parseInt(onlineList.inverse().get(this.user)); 
+		          Date cur = new Date(Calendar.getInstance().getTime().getTime()); 
+		          EntityManagerFactory emfactory; 
+		          EntityManager entitymanager; 
+		          emfactory = Persistence.createEntityManagerFactory( "websocket" ); 
+		          entitymanager = emfactory.createEntityManager( ); 
+		          entitymanager.getTransaction( ).begin( ); 
+		          MyMessage m = new MyMessage(); 
+		          m.setMessage(data.getMessage()); 
+		          m.setReceiver(data.getReceiver()); 
+		          m.setSender(id); 
+		          m.setDateTime(cur); 
+		          entitymanager.persist( m ); 
+		          entitymanager.getTransaction( ).commit( ); 
+		          String recev = Integer.toString(data.getReceiver()); 
+		          System.out.println("rec : "+recev); 
+		          SocketData reply = new SocketData();
+		          reply.setData(new Gson().toJson(m));
+		          reply.setHeader(this.genResponse(info.header));
+		          String json = gson.toJson(reply); 
+		          if(onlineList.containsKey(recev)){ 
+			          System.out.println("guy is present"); 
+			          WebSocket temp = onlineList.get(recev); 
+			          temp.send(json); 
+		          }else{ 
+		          System.out.println("guy not present");         
+		        }	 
+	        
+	        
+	        
+	        
 		      
 		      
 
@@ -131,11 +138,36 @@ public class TaskList {
 		return temp.toString();
 	}
 	
+	private SocketData fromJSON(String message){
+		Gson gson = new Gson();
+        SocketData data = new SocketData();
+        data = gson.fromJson(message, SocketData.class);
+        return data;
+	}
+	
+	private String toJSON(SocketData data){
+		Gson gson = new Gson();
+		String json = gson.toJson(data);
+		return json;
+	}
+	
+	private boolean sendMessage(String memId,String msg){
+		
+		if(onlineList.containsKey(memId)){
+			WebSocket conn = onlineList.get(memId);
+			conn.send(msg);
+			
+			
+		}
+		return true;
+		
+	}
+	
 	
 	public void deleteUser(WebSocket conn){
 		
 		System.out.println("this is get left"+onlineList.get(conn));
-		int id = Integer.parseInt(onlineList.get(conn));
+		int id = Integer.parseInt(onlineList.inverse().get(conn));
 		EntityManagerFactory emfactory;
 		EntityManager entitymanager;
 		  emfactory = Persistence.createEntityManagerFactory( "websocket" );
@@ -147,6 +179,7 @@ public class TaskList {
 	     onlineList.remove(conn);
 		
 	}
+	
 	
 	
 
