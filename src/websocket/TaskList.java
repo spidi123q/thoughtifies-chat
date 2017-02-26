@@ -7,10 +7,12 @@ import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.HashMap;
 
+import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.PostPersist;
+import javax.persistence.RollbackException;
 
 import org.java_websocket.WebSocket;
 
@@ -31,6 +33,7 @@ public class TaskList {
 	   // JDBC driver name and database URL
 	//static HashMap<WebSocket,String> onlineList = new HashMap<WebSocket,String>();
 	static BiMap<String, WebSocket> onlineList = HashBiMap.create();
+
 	
 	TaskList(WebSocket user,SocketData data){
 		this.user = user;
@@ -43,18 +46,25 @@ public class TaskList {
 			System.out.println("new user online : "+info.data);
 			Date cur = new Date(Calendar.getInstance().getTime().getTime());
 			
-			EntityManagerFactory emfactory;
-			EntityManager entitymanager;
-			  emfactory = Persistence.createEntityManagerFactory( "websocket" );
-			  entitymanager = emfactory.createEntityManager( );
-		      entitymanager.getTransaction( ).begin( );
-		      UserOnline u = new UserOnline();
-		      u.setMemId(Integer.parseInt(info.data));
-		      u.setTime(cur);	      
-		      entitymanager.persist( u );
-		      entitymanager.getTransaction( ).commit( );    
-		      onlineList.put(info.data,user);// <websocket,mem_id>
-		      return this.getResponse(info.header);
+			 EntityManagerFactory emfactory;
+			 EntityManager entitymanager;
+				  emfactory = Persistence.createEntityManagerFactory( "websocket" );
+				  entitymanager = emfactory.createEntityManager( );
+			      entitymanager.getTransaction( ).begin( );
+			      UserOnline u = new UserOnline();
+			      u.setMemId(Integer.parseInt(info.data));
+			      u.setTime(cur);	
+			      entitymanager.persist(u);
+			      try{
+			    	  entitymanager.getTransaction( ).commit( ); 
+			      }catch(RollbackException e){
+			    	  System.out.println(e);
+			      }
+			      			    
+			      onlineList.put(info.data,user);// <websocket,mem_id>
+			      
+			
+			      return this.getResponse(info.header);
 		     
 			
 			
@@ -93,6 +103,7 @@ public class TaskList {
 		          m.setDateTime(cur); 
 		          entitymanager.persist( m ); 
 		          entitymanager.getTransaction( ).commit( ); 
+		          entitymanager.close();
 		          String recev = Integer.toString(data.getReceiver()); 
 		          System.out.println("rec : "+recev); 
 		          SocketData reply = new SocketData();
@@ -117,6 +128,7 @@ public class TaskList {
 		}
 		return info;
 	}
+	
 	
 	private SocketData getResponse(String code){
 		
@@ -164,8 +176,9 @@ public class TaskList {
 	}
 	
 	
-	public void deleteUser(WebSocket conn){
+	public SocketData deleteUser(WebSocket conn){
 		
+	     SocketData reply = new SocketData();
 		System.out.println("this is get left"+onlineList.get(conn));
 		int id = Integer.parseInt(onlineList.inverse().get(conn));
 		EntityManagerFactory emfactory;
@@ -176,7 +189,11 @@ public class TaskList {
 		 UserOnline u = entitymanager.find( UserOnline.class, id );
 	     entitymanager.remove( u );
 	     entitymanager.getTransaction( ).commit();
-	     onlineList.remove(conn);
+	     entitymanager.close();
+	     onlineList.inverse().remove(conn);
+	     reply.setData("refresh chat");
+         reply.setHeader(this.genResponse(INIT));
+	     return reply;
 		
 	}
 	

@@ -17,7 +17,7 @@ import org.java_websocket.server.WebSocketServer;
 /**
  * A simple WebSocketServer implementation. Keeps track of a "chatroom".
  */
-public class ChatServer extends WebSocketServer {
+public class ChatServer extends WebSocketServer  {
 	
 	TaskList task;
 	
@@ -53,17 +53,32 @@ public class ChatServer extends WebSocketServer {
     public void onClose( WebSocket conn, int code, String reason, boolean remote ) {
         //this.sendToAll( conn + " has left the room!" );
         //System.out.println( conn + " has left the room!" );
-        System.out.println("user left");
-        this.task.deleteUser(conn);
+      
+        new Thread( new Runnable() {
+    	    @Override
+    	    public void run() {
+    	    	  System.out.println("user left");
+    	    	  SocketData reply = task.deleteUser(conn);
+    	    	  sendToAll(toJSON(reply));
+    	    	  
+    	    }
+    	}).start();
 
     }
 
     @Override
     public void onMessage( WebSocket conn, String message ) {
-        this.sendToAll( message );
+        //this.sendToAll( message );
         //System.out.println( conn + ": " + message );
-        task = new TaskList(conn,this.fromJSON(message));
-        this.sendToAll(this.toJSON(task.response));
+    	new Thread( new Runnable() {
+    	    @Override
+    	    public void run() {
+    	    	System.out.println("new thread created");
+    	    	task = new TaskList(conn,fromJSON(message));
+    	        sendToAll(toJSON(task.response));
+    	    }
+    	}).start();
+        
         //conn.send("kunna");
         
     }
