@@ -30,6 +30,7 @@ public class TaskList {
 	String INIT = "7000";	//init chat to new user
 	String NEW_MSG = "7001";	//new messege sent notification
 	String SEND_MSG = "7002";	//new messege sent
+	String FRIEND_REQ = "7003";	//new friend request sent
 	   // JDBC driver name and database URL
 	//static HashMap<WebSocket,String> onlineList = new HashMap<WebSocket,String>();
 	static BiMap<String, WebSocket> onlineList = HashBiMap.create();
@@ -124,6 +125,23 @@ public class TaskList {
 		      
 		      
 
+			
+		}
+		else if(info.header.equals(this.FRIEND_REQ)){
+			System.out.println("new friend req  to "+info.getData());
+			
+			if( onlineList.containsKey( info.getData() ) ){
+				System.out.println("guy is present");
+				WebSocket temp = onlineList.get(info.getData());
+				SocketData reply = new SocketData();
+				Gson gson = new Gson(); 
+		        reply.setData("new friend req");
+		        reply.setHeader(this.genResponse(info.header));
+		        String json = gson.toJson(reply); 
+				temp.send(json);
+			}else{
+				System.out.println("guy not present");				
+			}
 			
 		}
 		return info;
