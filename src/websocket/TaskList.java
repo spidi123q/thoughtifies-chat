@@ -32,6 +32,7 @@ public class TaskList {
 	String SEND_MSG = "7002";	//new messege sent
 	String FRIEND_REQ = "7003";	//new friend request sent
 	String NEW_RATING = "7004";	//new friend request sent
+	String TYPING = "7005";
 	   // JDBC driver name and database URL
 	//static HashMap<WebSocket,String> onlineList = new HashMap<WebSocket,String>();
 	static BiMap<String, WebSocket> onlineList = HashBiMap.create();
@@ -149,6 +150,24 @@ public class TaskList {
 				SocketData reply = new SocketData();
 				Gson gson = new Gson(); 
 		        reply.setData("new rating ");
+		        reply.setHeader(this.genResponse(info.header));
+		        String json = gson.toJson(reply); 
+				temp.send(json);
+			}else{
+				System.out.println("guy not present");				
+			}
+			
+		}
+		else if(info.header.equals(this.TYPING)){
+			System.out.println("new rating   to "+info.getData());
+			
+			if( onlineList.containsKey( info.getData() ) ){
+				System.out.println("guy is present");
+				WebSocket temp = onlineList.get(info.getData());
+				SocketData reply = new SocketData();
+				Gson gson = new Gson(); 
+				String receiver = this.onlineList.inverse().get(user);
+		        reply.setData(receiver);
 		        reply.setHeader(this.genResponse(info.header));
 		        String json = gson.toJson(reply); 
 				temp.send(json);
