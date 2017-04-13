@@ -3,6 +3,8 @@
 	<persistence-unit name="websocket">
 		<class>websocket.UserOnline</class>
 		<class>websocket.MyMessage</class>
+		<class>websocket.Friendship</class>
+		<class>websocket.FriendshipPK</class>
 		<properties>
          <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost/simple_login"/>
          <property name="javax.persistence.jdbc.user" value="root"/>

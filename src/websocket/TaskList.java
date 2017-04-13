@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
@@ -13,6 +14,10 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.PostPersist;
 import javax.persistence.RollbackException;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 import org.java_websocket.WebSocket;
 
@@ -65,8 +70,18 @@ public class TaskList {
 			      }
 			      			    
 			      onlineList.put(info.data,user);// <websocket,mem_id>
+			      System.out.println(info.header);
+/*
+			      FriendshipPK id = new FriendshipPK();
+			      id.setSender(25);
+			      id.setReceiver(34);
+			      Friendship friend = entitymanager.find(Friendship.class, id);
+			      System.out.println("date : "+friend.getDateTime());
+			      CriteriaBuilder cb = entitymanager.getCriteriaBuilder();
+			      CriteriaQuery<Friendship> cq = cb.createQuery(Friendship.class);
 			      
-			
+*/
+
 			      return this.getResponse(info.header);
 		     
 			
