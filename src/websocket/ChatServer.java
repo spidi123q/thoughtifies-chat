@@ -58,8 +58,7 @@ public class ChatServer extends WebSocketServer  {
     	    @Override
     	    public void run() {
     	    	  System.out.println("user left");
-    	    	  SocketData reply = task.deleteUser(conn);
-    	    	  sendToAll(toJSON(reply));
+    	    	  task.deleteUser(conn);
     	    	  
     	    }
     	}).start();
