@@ -4,21 +4,15 @@ import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
-import javax.persistence.EntityExistsException;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.PostPersist;
-import javax.persistence.RollbackException;
-import javax.persistence.TypedQuery;
+import javax.persistence.*;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.ListJoin;
 import javax.persistence.criteria.Root;
 
+import com.google.common.collect.Sets;
 import org.java_websocket.WebSocket;
 
 import com.google.common.collect.BiMap;
@@ -53,6 +47,7 @@ public class TaskList {
 		if(info.header.equals(INIT)){			
 			System.out.println("new user online : "+info.data);
 			Date cur = new Date(Calendar.getInstance().getTime().getTime());
+            String response = toJSON(getResponse(info.getHeader()));
 			
 			 EntityManagerFactory emfactory;
 			 EntityManager entitymanager;
@@ -75,14 +70,47 @@ public class TaskList {
 			      FriendshipPK id = new FriendshipPK();
 			      id.setSender(25);
 			      id.setReceiver(34);
-			      Friendship friend = entitymanager.find(Friendship.class, id);
+			      Friendship friend = entitymanager.find(Friendship.class,id);
 			      System.out.println("date : "+friend.getDateTime());
+			      */
 			      CriteriaBuilder cb = entitymanager.getCriteriaBuilder();
 			      CriteriaQuery<Friendship> cq = cb.createQuery(Friendship.class);
-			      
-*/
+			      Query query = entitymanager.createQuery(
+			              "select e.id.receiver from Friendship e where e.id.sender = :sender and e.status = 1");
+			      query.setParameter("sender",Integer.parseInt(info.data));
+                  List<Integer> list1 = query.getResultList();
+                  query = entitymanager.createQuery(
+                          "select e.id.sender from Friendship  e where e.id.receiver = :receiver and e.status = 1");
+                  query.setParameter("receiver",Integer.parseInt(info.data));
+                  List<Integer> list2 = query.getResultList();
+                  Set<Integer> friends = Sets.union(new HashSet<>(list1),new HashSet<>(list2));
+                  if (!friends.isEmpty()){
+                      query = entitymanager.createQuery(
+                              "select e.memId from UserOnline e where e.memId in :friends");
+                      query.setParameter("friends",friends);
+                      List<Integer> friendsOnline = query.getResultList();
+                      for(Integer user:friendsOnline) {
+                          System.out.println("USER NAME :"+user);
+                          if(onlineList.containsKey(user.toString())){
+                              System.out.println("guy is present");
+                              WebSocket conn = onlineList.get(user.toString());
+                              conn.send(response);
+                          }else{
+                              System.out.println("guy not present");
+                          }
 
-			      return this.getResponse(info.header);
+                      }
+                  }
+
+                  if (onlineList.containsKey(info.data)){
+                      WebSocket conn = onlineList.get(info.data);
+                      conn.send(response);
+                  }
+
+
+
+
+			return this.getResponse(info.header);
 		     
 			
 			
@@ -134,7 +162,7 @@ public class TaskList {
 			          temp.send(json); 
 		          }else{ 
 		          System.out.println("guy not present");         
-		        }	 
+		          }
 	        	        	        	      	      
 		      
 			

@@ -75,7 +75,7 @@ public class ChatServer extends WebSocketServer  {
     	    public void run() {
     	    	System.out.println("new thread created");
     	    	task = new TaskList(conn,fromJSON(message));
-    	        sendToAll(toJSON(task.response));
+    	        //sendToAll(toJSON(task.response));
     	    }
     	}).start();
         
@@ -90,7 +90,7 @@ public class ChatServer extends WebSocketServer  {
 
     public static void main( String[] args ) throws InterruptedException , IOException {
         WebSocketImpl.DEBUG = true;
-        int port = 8887; // 843 flash policy port
+        int port = 5000; // 843 flash policy port
         try {
             port = Integer.parseInt( args[ 0 ] );
         } catch ( Exception ex ) {
